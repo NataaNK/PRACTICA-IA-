@@ -3,15 +3,17 @@ Autores: Natalia Rodríguez Navarro y Ángela Serrano Casas
 
 Este módulo presenta el código que permite obtener la política óptima
 para la calefacción (acción ON o acción OFF) dada la temperatura que se 
-desea alcanzar. Es decir, se presentará la acción más factible de cada
-uno de los estados posibles (del 16 a 25 grados).
+desea alcanzar. Es decir, se presentará la acción más factible desde 
+cada uno de los estados posibles (del 16 a 25 grados).
 Para ello, debe darse unos valores a las constantes temperatura deseada 
 (TEMPERATURA_DESEADA), coste de encendido (COSTE_ON), coste de apagado 
 (COSTE_OF) y el número de ciclos (N_CICLOS) que se desea alcanzar para 
-obtener el valor de los estados con la Ecuación de Bellman.
+obtener el valor de los estados con la Ecuación de Bellman. Si se desea,
+también puede darse la ruta de los archivos .csv que guardan las tablas
+de probabilidades de las dos acciones, con el fin de usar una distinta
+a la nuestra (CSV_PROBS_ON y CSV_PROBS_OFF).
 """
 import csv
-from math import trunc
 
 
 #---------------------------------- VALORES MODIFICABLES ---------------------------------------
@@ -19,13 +21,17 @@ from math import trunc
 # Temperatura que se desea alcanzar (estado final)
 TEMPERATURA_DESEADA = 22
 # Coste de la acción "encender calefacción"
-COSTE_ON = 1
+COSTE_ON = 6.7793
 # Coste de la acción "apagar calefacción"
-COSTE_OFF = 1
+COSTE_OFF = 0.610137
 # Ciclos que se desean para calcular la política óptima
 # En el caso de indicar None, se harán todos los ciclos necesarios
 # hasta converger
-N_CICLOS = 50
+N_CICLOS = None
+# Ruta al fichero csv que guarda las matrices con las probabilidades
+CSV_PROBS_ON = "./PROB_ON.csv"
+CSV_PROBS_OFF = "./PROB_OFF.csv"
+
 
 
 #----------------------------- OBTENCIÓN DEL RESTO DE VARIABLES --------------------------------
@@ -54,13 +60,17 @@ def obtener_matrices_probs(csv_path: str) -> list:
 
 # Obtenemos las probabilidades de las acciones ON y OFF, y
 # las guardamos en una matriz
-matriz_ON = obtener_matrices_probs("./PROB_ON.csv")
-matriz_OFF = obtener_matrices_probs("./PROB_OFF.csv")
+matriz_ON = obtener_matrices_probs(CSV_PROBS_ON)
+matriz_OFF = obtener_matrices_probs(CSV_PROBS_OFF)
 # El valor de los estados en el ciclo 0 es "0", por lo que
 # usaremos una lista con los valores inicializados a "0"
 # en el while que calculará la política óptima
 estados = len(matriz_ON)+1
 lista_convergencia  = [0] * estados
+
+
+
+#----------------------------- COMPROBACIÓN DE VARIABLES CORRECTAS -----------------------------
 
 # Comprobamos que los valores que pasaremos al while son correctos
 temperaturas_posibles = [16,16.5,17,17.5,18,18.5,19,19.5,20,20.5,21,21.5,
@@ -72,8 +82,9 @@ if type(COSTE_ON) != float and type(COSTE_ON) != int:
     raise TypeError ("El coste de la acción ON debe ser un real")
 if type(COSTE_OFF) != float and type(COSTE_OFF) != int:
     raise TypeError ("El coste de la acción OFF debe ser un real")
-if N_CICLOS and type(N_CICLOS) != int:
+if N_CICLOS and type(N_CICLOS) != int and N_CICLOS > 0:
     raise TypeError ("El número de ciclos debe ser un natural o None")
+
 
 
 #----------------------------- CÁLCULO DE LA POLÍTICA ÓPTIMA -----------------------------------
@@ -84,7 +95,7 @@ ciclos_restantes = N_CICLOS
 converge = False
 # Seguiremos calculando hasta que converjan los valores o hasta llegar
 # al número de ciclos indicado
-while ((not converge) and (ciclos_restantes > 0)):
+while ((not converge) and ((not ciclos_restantes) or (ciclos_restantes > 0))):
     """
     Cálculo de la política óptima a partir de la ecuación de Bellman. Obtenemos 
     una lista que contiene las acciones óptimas por cada uno de los estados dada 
@@ -109,7 +120,7 @@ while ((not converge) and (ciclos_restantes > 0)):
                 # de la lista ya que contiene el estado
                 if lista_probs_ON[prob] != 0 and prob != 0:
                     v_on += lista_convergencia[prob] * lista_probs_ON[prob]             
-                v_on += COSTE_ON
+            v_on += COSTE_ON
 
             # Calculamos el valor del estado con la acción OFF
             for prob in range(len(lista_probs_OFF)):
@@ -119,11 +130,11 @@ while ((not converge) and (ciclos_restantes > 0)):
                     v_off += lista_convergencia[prob] * lista_probs_OFF[prob]    
             v_off += COSTE_OFF
 
-            # Si no se indica el número de ciclos, truncamos los valores
-            # para segurar que éstos converjan
+            # Si no se indica el número de ciclos, redondeamos los valores
+            # para asegurar que éstos converjan
             if not N_CICLOS:
-                v_on = trunc(v_on)
-                v_off = trunc(v_off)
+                v_on = round(v_on, 10)
+                v_off = round(v_off, 10)
 
             # El elemento 0 de la lista contiene el estado en el que nos encontramos
             if lista_probs_ON[0] != TEMPERATURA_DESEADA:
@@ -155,8 +166,6 @@ while ((not converge) and (ciclos_restantes > 0)):
         # La lista de convergencia, ahora será la nueva que hemos calculado
         lista_convergencia = lista_convergencia_temp
 
-    
-    
 
 
 #--------------------------------------- RESULTADOS --------------------------------------------
