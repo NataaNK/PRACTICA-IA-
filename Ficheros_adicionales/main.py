@@ -29,8 +29,8 @@ COSTE_OFF = 0.610137
 # hasta converger
 N_CICLOS = None
 # Ruta al fichero csv que guarda las matrices con las probabilidades
-CSV_PROBS_ON = "./PROB_ON.csv"
-CSV_PROBS_OFF = "./PROB_OFF.csv"
+CSV_PROBS_ON = "./Ficheros_adicionales/PROB_ON.csv"
+CSV_PROBS_OFF = "./Ficheros_adicionales/PROB_OFF.csv"
 
 
 
